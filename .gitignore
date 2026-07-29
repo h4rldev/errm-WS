@@ -1,0 +1,8 @@
+.direnv
+.cache
+*.beam
+_build
+result
+
+*.dump
+*.crashdump

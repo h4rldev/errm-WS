@@ -1,0 +1,9 @@
+{application, errm_ws, [
+  {description, "Errm.. WS! - an erlang library for Websockets that's easy to use."},
+  {vsn, "0.1.0"},
+  {registered, []},
+  {applications, [kernel, stdlib]},
+  {env, []},
+  {licenses, ["BSD-3"]},
+  {links, [{"Codeberg", "https://codeberg.org/h4rl/errm-WS"}]}
+]}.
