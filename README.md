@@ -8,7 +8,7 @@ A small library in Erlang that handles and allows extension of Websocket communi
 
 ## How to use
 
-Check the [example/](example/) directory for a simple example.
+Check the [examples/](examples/) directory for a simple example.
 
 ## License
 
