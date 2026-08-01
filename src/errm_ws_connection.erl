@@ -443,7 +443,11 @@ do_handshake_and_take_ownership(Sock, with_handshake, StartArgs) ->
 
 do_handshake_and_take_ownership(Sock, upgraded, StartArgs) ->
   RequestMap = maps:get(request_map, StartArgs),
-  case errm_ws_handshake:validate(RequestMap) of
+  HandlerArgs = maps:get(handler_args, StartArgs),
+  CompressionConfig = maps:get(compression, HandlerArgs, #{enabled => false}),
+  Enabled = maps:get(enabled, CompressionConfig, false),
+  Normalized = RequestMap#{method => <<"GET">>, compression => Enabled},
+  case errm_ws_handshake:validate(Normalized) of
     {ok, ValidatedMap} ->
       Response = errm_ws_handshake:build_response(ValidatedMap),
       gen_tcp:send(Sock, Response),
