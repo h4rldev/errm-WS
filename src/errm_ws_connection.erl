@@ -442,7 +442,14 @@ do_handshake_and_take_ownership(Sock, with_handshake, StartArgs) ->
   end;
 
 do_handshake_and_take_ownership(Sock, upgraded, StartArgs) ->
-  ok = gen_tcp:controlling_process(Sock, self()),
-  inet:setopts(Sock, [{active, once}, {packet, raw}, {nodelay, true}]),
   RequestMap = maps:get(request_map, StartArgs),
-  {ok, RequestMap}.
+  case errm_ws_handshake:validate(RequestMap) of
+    {ok, ValidatedMap} ->
+      Response = errm_ws_handshake:build_response(ValidatedMap),
+      gen_tcp:send(Sock, Response),
+      ok = gen_tcp:controlling_process(Sock, self()),
+      inet:setopts(Sock, [{active, once}, {packet, raw}, {nodelay, true}]),
+      {ok, ValidatedMap};
+    {error, Reason} ->
+      {error, Reason}
+  end.
