@@ -32,6 +32,7 @@ upgrade(Sock, RequestMap, HandlerMod, HandlerArgs) ->
   HandlerArgs1 = add_compression_to_args(HandlerArgs),
   case errm_ws_connection:start_upgraded(Sock, RequestMap, HandlerMod, HandlerArgs1, DefaultMaxFrameSize, DefaultTimeout) of
     {ok, Pid} ->
+      unlink(Pid),
       ok = gen_tcp:controlling_process(Sock, Pid),
       Pid ! {start, Sock},
       logger:debug("[errm_ws]: Websocket, running on ~p", [Pid]),
