@@ -132,8 +132,9 @@ handle_info(close, State=#state{sock=Sock}) ->
   gen_tcp:send(Sock, errm_ws_frame:encode_close()),
   {stop, normal, State};
 
-handle_info(timeout, State=#state{timeout=Timeout}) when Timeout > 0 ->
+handle_info(timeout, State=#state{timeout=Timeout, sock=Sock}) when Timeout > 0 ->
   logger:debug("[errm_ws]: Timeout ~p reached, closing connection", [Timeout]),
+  gen_tcp:send(Sock, errm_ws_frame:encode_close()),
   {stop, normal, State};
 
 handle_info({send, text, Data}, State=#state{sock=Sock, compress_enabled = true, deflate_context = DefCtx, compress_threshold = Threshold}) ->
