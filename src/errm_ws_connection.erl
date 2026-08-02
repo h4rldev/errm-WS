@@ -120,21 +120,24 @@ handle_info({tcp, Sock, Data}, State=#state{sock=Sock}) ->
   handle_tcp_data(Data, State1);
 
 handle_info({tcp_closed, Sock}, State=#state{sock=Sock}) ->
+  logger:debug("[errm_ws]: Socket ~p closed", [Sock]),
   {stop, normal, State};
 
 handle_info({tcp_error, Sock, Reason}, State=#state{sock=Sock}) ->
-    logger:error("[errm_ws]: Socket error: ~p", [Reason]),
-    {stop, {socket_error, Reason}, State};
+  logger:error("[errm_ws]: Socket error: ~p", [Reason]),
+  {stop, {socket_error, Reason}, State};
 
 handle_info(close, State=#state{sock=Sock}) ->
+  logger:debug("[errm_ws]: Closing socket ~p", [Sock]),
   gen_tcp:send(Sock, errm_ws_frame:encode_close()),
   {stop, normal, State};
 
 handle_info(timeout, State=#state{timeout=Timeout}) when Timeout > 0 ->
-  logger:debug("[errm_ws]: Timeout reached, closing connection"),
+  logger:debug("[errm_ws]: Timeout ~p reached, closing connection", [Timeout]),
   {stop, normal, State};
 
 handle_info({send, text, Data}, State=#state{sock=Sock, compress_enabled = true, deflate_context = DefCtx, compress_threshold = Threshold}) ->
+  logger:debug("[errm_ws]: Sending compressed text frame to socket ~p", [Sock]),
   DataBin = iolist_to_binary(Data),
   {Rsv1, Payload} = case byte_size(DataBin) >= Threshold of
     true -> {1, compress_payload(DefCtx, DataBin)};
@@ -144,12 +147,14 @@ handle_info({send, text, Data}, State=#state{sock=Sock, compress_enabled = true,
   gen_tcp:send(Sock, Frame),
   {noreply, State};
 handle_info({send, text, Data}, State=#state{sock=Sock}) ->
+  logger:debug("[errm_ws]: Sending non-compressed text frame to socket ~p", [Sock]),
   DataBin = iolist_to_binary(Data),
   Frame = errm_ws_frame:encode_text(DataBin),
   gen_tcp:send(Sock, Frame),
   {noreply, State};
 
 handle_info({send, binary, Data}, State=#state{sock=Sock, compress_enabled = true, deflate_context = DefCtx, compress_threshold = Threshold}) ->
+  logger:debug("[errm_ws]: Sending compressed binary frame to socket ~p", [Sock]),
   DataBin = iolist_to_binary(Data),
   {Rsv1, Payload} = case byte_size(DataBin) >= Threshold of
     true -> {1, compress_payload(DefCtx, DataBin)};
@@ -159,12 +164,14 @@ handle_info({send, binary, Data}, State=#state{sock=Sock, compress_enabled = tru
   gen_tcp:send(Sock, Frame),
   {noreply, State};
 handle_info({send, binary, Data}, State=#state{sock=Sock}) ->
+  logger:debug("[errm_ws]: Sending non-compressed binary frame to socket ~p", [Sock]),
   DataBin = iolist_to_binary(Data),
   Frame = errm_ws_frame:encode_binary(DataBin),
   gen_tcp:send(Sock, Frame),
   {noreply, State};
 
 handle_info(Info, State=#state{handler_mod=Mod, handler_state=HandlerState}) ->
+  logger:debug("[errm_ws]: Received info ~p from Module ~p", [Info, Mod]),
   case Mod:handle_info(Info, HandlerState) of
     {ok, NewHandlerState} ->
       {noreply, State#state{handler_state=NewHandlerState}};
@@ -180,6 +187,7 @@ handle_info(Info, State) ->
   {noreply, State}.
 
 terminate(Reason, #state{handler_mod=Mod, handler_state=HandlerState, sock=Sock, deflate_context = DefCtx, inflate_context = InfCtx}) ->
+  logger:debug("[errm_ws] Terminating Module ~p due to ~p", [Mod, Reason]),
   Mod:terminate(Reason, HandlerState),
   compress_close_if_open(DefCtx),
   compress_close_if_open(InfCtx),
